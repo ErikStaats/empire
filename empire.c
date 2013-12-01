@@ -12,6 +12,7 @@
  */
 
 #include <ncurses.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -26,10 +27,12 @@
  *
  *   COUNTRY_COUNT          Count of the number of countries.
  *   TITLE_COUNT            Count of the number of ruler titles.
+ *   DELAY_TIME             Time in seconds to delay.
  */
 
 #define COUNTRY_COUNT       6
 #define TITLE_COUNT         4
+#define DELAY_TIME          3
 
 
 /*------------------------------------------------------------------------------
@@ -59,9 +62,11 @@ typedef struct
  * This structure contains fields for a player record.
  *
  *   name                   Player name.
+ *   number                 Player number.
  *   country                Player country.
  *   level                  Player level.
  *   title                  Player title.
+ *   defeated               If true, player has been defeated.
  *   land                   Land in acres.
  *   grain                  Grain reserves in bushels.
  *   treasury               Currency treasury.
@@ -74,14 +79,20 @@ typedef struct
  *   salesTax               Sales tax.
  *   incomeTax              Income tax.
  *   foundryCount           Count of number of foundries.
+ *   grainForSale           Bushels of grain for sale.
+ *   grainPrice             Grain price.
+ *   ratPct                 Percent of grain eaten by rats.
+ *   grainHarvest           Grain harvest for year.
  */
 
 typedef struct
 {
     char                    name[80];
+    int                     number;
     Country                *country;
     int                     level;
     char                    title[80];
+    bool                    defeated;
     int                     land;
     int                     grain;
     int                     treasury;
@@ -94,6 +105,10 @@ typedef struct
     int                     salesTax;
     int                     incomeTax;
     int                     foundryCount;
+    int                     grainForSale;
+    float                   grainPrice;
+    int                     ratPct;
+    int                     grainHarvest;
 } Player;
 
 
@@ -109,6 +124,16 @@ void GameSetupScreen(void);
 void NewYearScreen(void);
 
 void FoodScreen(Player *aPlayer);
+
+void DrawFoodScreen(Player *aPlayer);
+
+void TradeGrainAndLand(Player *aPlayer);
+
+void BuyGrain(Player *aPlayer);
+
+void SellGrain(Player *aPlayer);
+
+void SellLand(Player *aPlayer);
 
 
 /*------------------------------------------------------------------------------
@@ -194,6 +219,7 @@ char *weatherList[] =
  *   playerCount            Count of the number of human players.
  *   year                   Current year.
  *   weather                Weather for year, 1 based.
+ *   barbarianLand          Amount of barbarian land in acres.
  *   done                   If true, game is done.
  */
 
@@ -201,6 +227,7 @@ Player playerList[COUNTRY_COUNT];
 int playerCount = 0;
 int year = 0;
 int weather;
+int barbarianLand = 6000;
 int done = FALSE;
 
 
@@ -236,7 +263,7 @@ int main(argc, argv)
     scrollok(stdscr, TRUE);
 
     /* Seed the random number generator. */
-   srand(time(NULL));
+    srand(time(NULL));
 
     /* Display the game start screen. */
     StartScreen();
@@ -287,7 +314,7 @@ void StartScreen(void)
     refresh();
 
     /* Delay. */
-    sleep(3);
+    sleep(DELAY_TIME);
 }
 
 
@@ -312,7 +339,7 @@ void GameSetupScreen(void)
         printw("HOW MANY PEOPLE ARE PLAYING? ");
         refresh();
         getnstr(input, sizeof(input));
-        playerCount = atoi(input);
+        playerCount = strtol(input, NULL, 0);
     } while ((playerCount < 1) || (playerCount > 6));
 
     /* Get the player names. */
@@ -347,6 +374,9 @@ void GameSetupScreen(void)
         country = &(countryList[i]);
         player = &(playerList[i]);
 
+        /* Initialize the player's number. */
+        player->number = i + 1;
+
         /* Initialize the player's country. */
         player->country = country;
 
@@ -358,6 +388,7 @@ void GameSetupScreen(void)
                  country->titleList[player->level]);
 
         /* Initialize the player's state. */
+        player->defeated = FALSE;
         player->land = 10000;
         player->grain = 15000 + ((rand() % 10000) + 1);
         player->treasury = 1000;
@@ -370,6 +401,8 @@ void GameSetupScreen(void)
         player->salesTax = 5;
         player->incomeTax = 35;
         player->foundryCount = 0;
+        player->grainForSale = 0;
+        player->grainPrice = 0.0;
     }
 }
 
@@ -400,7 +433,7 @@ void NewYearScreen(void)
     refresh();
 
     /* Delay. */
-    sleep(3);
+    sleep(DELAY_TIME);
 }
 
 
@@ -412,26 +445,43 @@ void NewYearScreen(void)
 
 void FoodScreen(Player *aPlayer)
 {
+    /* Determine what percentage of grain the rats ate. */
+    aPlayer->ratPct = (rand() % 30) + 1;
+    aPlayer->grain -= (aPlayer->grain * aPlayer->ratPct) / 100;
+
+    /* Determine the grain harvest. */
+    aPlayer->grainHarvest =   (weather * aPlayer->land * 0.72)
+                            + ((rand() % 500) + 1)
+                            - (aPlayer->foundryCount * 500);
+    if (aPlayer->grainHarvest < 0)
+        aPlayer->grainHarvest = 0;
+    aPlayer->grain += aPlayer->grainHarvest;
+
+    /* Draw the food screen. */
+    DrawFoodScreen(aPlayer);
+
+    /* Trade grain and land. */
+    TradeGrainAndLand(aPlayer);
+}
+
+
+/*
+ * Draw the food screen for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ */
+
+void DrawFoodScreen(Player *aPlayer)
+{
+    Player  *player;
     Country *country;
-    int      grainHarvest;
     int      peopleRequire;
     int      armyRequire;;
-    int      ratPct;
+    bool     anyGrainForSale;
+    int      i;
 
     /* Get the player country. */
     country = aPlayer->country;
-
-    /* Determine what percentage of grain the rats ate. */
-    ratPct = (rand() % 30) + 1;
-    aPlayer->grain -= (aPlayer->grain * ratPct) / 100;
-
-    /* Determine the grain harvest. */
-    grainHarvest =   (weather * aPlayer->land * 0.72)
-                   + ((rand() % 500) + 1)
-                   - (aPlayer->foundryCount * 500);
-    if (grainHarvest < 0)
-        grainHarvest = 0;
-    aPlayer->grain += grainHarvest;
 
     /* Determine the amount of grain required by the people. */
     peopleRequire = 5 * (  aPlayer->serfCount
@@ -449,13 +499,13 @@ void FoodScreen(Player *aPlayer)
     printw("%s %s OF %s\n", aPlayer->title, aPlayer->name, country->name);
 
     /* Display how much grain the rats ate. */
-    printw("RATS ATE %d %% OF THE GRAIN RESERVE\n", ratPct);
+    printw("RATS ATE %d %% OF THE GRAIN RESERVE\n", aPlayer->ratPct);
 
     /* Display grain levels and treasury. */
     printw("GRAIN     GRAIN     PEOPLE     ARMY       ROYAL\n");
     printw("HARVEST   RESERVE   REQUIRE    REQUIRES   TREASURY\n");
     printw(" %6d    %6d    %6d     %6d     %6d\n",
-           grainHarvest,
+           aPlayer->grainHarvest,
            aPlayer->grain,
            peopleRequire,
            armyRequire,
@@ -465,11 +515,299 @@ void FoodScreen(Player *aPlayer)
     /* Display grain for sale. */
     printw("------GRAIN FOR SALE:\n");
     printw("                COUNTRY         BUSHELS         PRICE\n");
+    anyGrainForSale = FALSE;
+    for (i = 0; i < COUNTRY_COUNT; i++)
+    {
+        player = &(playerList[i]);
+        if (player->grainForSale > 0)
+        {
+            anyGrainForSale = TRUE;
+            printw(" %d              %-16s %-14d %5.2f\n",
+                   player->number,
+                   player->country->name,
+                   player->grainForSale,
+                   player->grainPrice);
+        }
+    }
+
+    /* Display if no grain is for sale. */
+    if (!anyGrainForSale)
+    {
+        printw("\n\nNO GRAIN FOR SALE . . .\n\n");
+    }
 
     /* Refresh screen. */
     refresh();
+}
 
-    /* Delay. */
-    sleep(3);
+
+/*
+ * Trade grain and land for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ * 
+ */
+
+void TradeGrainAndLand(Player *aPlayer)
+{
+    char input[80];
+    bool doneTrading;
+
+    /* Trade grain and land. */
+    doneTrading = FALSE;
+    while (!doneTrading)
+    {
+        /* Draw food screen. */
+        DrawFoodScreen(aPlayer);
+
+        /* Display options. */
+        move(14, 0);
+        clrtoeol();
+        printw("1) BUY GRAIN  2) SELL GRAIN  3) SELL LAND? ");
+        getnstr(input, sizeof(input));
+
+        /* Parse command. */
+        switch (strtol(input, NULL, 0))
+        {
+            case 0 :
+                doneTrading = TRUE;
+                break;
+
+            case 1 :
+                BuyGrain(aPlayer);
+                break;
+
+            case 2 :
+                SellGrain(aPlayer);
+                break;
+
+            case 3 :
+                SellLand(aPlayer);
+                break;
+
+            default :
+                break;
+        }
+    }
+}
+
+
+/*
+ * Buy grain for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ */
+
+void BuyGrain(Player *aPlayer)
+{
+    Player *seller;
+    int     sellerIndex;
+    int     grain;
+    char    input[80];
+    bool    validSeller;
+    bool    validGrain;
+
+    /* Get the seller from which to buy grain. */
+    validSeller = FALSE;
+    do
+    {
+        move(14, 0);
+        clrtoeol();
+        printw("FROM WHICH COUNTRY  (GIVE #)? ");
+        getnstr(input, sizeof(input));
+        sellerIndex = strtol(input, NULL, 0);
+        if ((sellerIndex >= 0) & (sellerIndex <= COUNTRY_COUNT))
+        {
+            validSeller = TRUE;
+        }
+    } while (!validSeller);
+    if (sellerIndex > 0)
+        seller = &(playerList[sellerIndex - 1]);
+    else
+        seller = NULL;
+
+    /* Validate that the seller has grain for sale. */
+    if ((seller == NULL) || (seller->defeated) || (seller->grainForSale == 0))
+    {
+        printw("THAT COUNTRY HAS NONE FOR SALE!");
+        refresh();
+        sleep(DELAY_TIME);
+        return;
+    }
+
+    /* Cannot buy grain from self. */
+    if (seller == aPlayer)
+    {
+        printw("YOU CANNOT BUY GRAIN THAT YOU HAVE PUT ONTO THE MARKET!");
+        refresh();
+        sleep(DELAY_TIME);
+        return;
+    }
+
+    /* Get the amount of grain to buy. */
+    validGrain = FALSE;
+    do
+    {
+        move(14, 0);
+        clrtoeol();
+        printw("HOW MANY BUSHELS? ");
+        getnstr(input, sizeof(input));
+        grain = strtol(input, NULL, 0);
+        if (grain > seller->grainForSale)
+        {
+            printw("YOU CAN'T BUY MORE GRAIN THEN THEY ARE SELLING!");
+            refresh();
+            sleep(DELAY_TIME);
+            move(14, 0);
+            clrtoeol();
+            move(15, 0);
+            clrtoeol();
+            refresh();
+        }
+        else
+        {
+            validGrain = TRUE;
+        }
+    } while (!validGrain);
+}
+
+
+/*
+ * Sell grain for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ * 
+ */
+
+void SellGrain(Player *aPlayer)
+{
+    int   grainToSell;
+    float grainPrice;
+    char  input[80];
+    bool  validGrainToSell;
+    bool  validGrainPrice;
+
+    /* Get the amount of grain to sell. */
+    validGrainToSell = FALSE;
+    do
+    {
+        move(14, 0);
+        clrtoeol();
+        printw("HOW MANY BUSHELS DO YOU WISH TO SELL? ");
+        getnstr(input, sizeof(input));
+        grainToSell = strtol(input, NULL, 0);
+        if (grainToSell <= aPlayer->grain)
+        {
+            validGrainToSell = TRUE;
+        }
+        else
+        {
+            move(14, 0);
+            clrtoeol();
+            printw("%s %s, PLEASE THINK AGAIN\n",
+                   aPlayer->title,
+                   aPlayer->name);
+            printw("YOU ONLY HAVE %d BUSHELS.", aPlayer->grain);
+            refresh();
+            sleep(DELAY_TIME);
+            move(14, 0);
+            clrtoeol();
+            move(15, 0);
+            clrtoeol();
+            refresh();
+        }
+    } while (!validGrainToSell);
+
+    /* Get the price at which to sell grain. */
+    validGrainPrice = FALSE;
+    do
+    {
+        move(14, 0);
+        clrtoeol();
+        printw("WHAT WILL BE THE PRICE PER BUSHEL? ");
+        getnstr(input, sizeof(input));
+        grainPrice = strtod(input, NULL);
+        if (grainPrice <= 15.0)
+        {
+            validGrainPrice = TRUE;
+        }
+        else
+        {
+            printw("BE REASONABLE . . .EVEN GOLD COSTS LESS THAN THAT!");
+            refresh();
+            sleep(DELAY_TIME);
+            move(14, 0);
+            clrtoeol();
+            move(15, 0);
+            clrtoeol();
+            refresh();
+        }
+    } while (!validGrainPrice);
+
+    /* Update the total grain for sale and price. */
+    aPlayer->grainPrice =
+          (  (aPlayer->grainPrice * ((float) aPlayer->grainForSale))
+           + (grainPrice * ((float) grainToSell)))
+        / ((float) (aPlayer->grainForSale + grainToSell));
+    aPlayer->grainForSale += grainToSell;
+    aPlayer->grain -= grainToSell;
+}
+
+
+/*
+ * Sell land for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ * 
+ */
+
+void SellLand(Player *aPlayer)
+{
+    int   landToSell;
+    char  input[80];
+    bool  validLandToSell;
+
+    /* Sell land. */
+    validLandToSell = FALSE;
+    do
+    {
+        /* Display the price per acre. */
+        move(14, 0);
+        clrtoeol();
+        printw("THE BARBARIANS WILL GIVE YOU 2 %s PER ACRE",
+               aPlayer->country->currency);
+        refresh();
+        sleep(DELAY_TIME);
+
+        /* Get the number of acres to sell. */
+        move(14, 0);
+        clrtoeol();
+        printw("HOW MANY ACRES WILL YOU SELL THEM? ");
+        getnstr(input, sizeof(input));
+        landToSell = strtol(input, NULL, 0);
+        if (landToSell < 0)
+        {
+            validLandToSell = FALSE;
+        }
+        else if (((float) landToSell) <= (0.95 * ((float) aPlayer->land)))
+        {
+            validLandToSell = TRUE;
+        }
+        else
+        {
+            printw("YOU MUST KEEP SOME LAND FOR THE ROYAL PALACE!");
+            refresh();
+            sleep(DELAY_TIME);
+            move(14, 0);
+            clrtoeol();
+            move(15, 0);
+            clrtoeol();
+            refresh();
+        }
+    } while (!validLandToSell);
+
+    /* Update land and treasury. */
+    aPlayer->treasury += 2 * landToSell;
+    aPlayer->land -= landToSell;
 }
 

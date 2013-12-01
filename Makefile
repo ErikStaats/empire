@@ -18,5 +18,5 @@ all: empire
 #
 
 empire: empire.c
-	gcc -lncurses -o empire empire.c
+	gcc -g -lncurses -o empire empire.c
 
