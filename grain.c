@@ -56,6 +56,7 @@ void GrainScreen(Player *aPlayer)
     aPlayer->grain -= (aPlayer->grain * aPlayer->ratPct) / 100;
 
     /* Determine the grain harvest. */
+    /*zzz not aPlayer->land */
     aPlayer->grainHarvest =   (weather * aPlayer->land * 0.72)
                             + ((rand() % 500) + 1)
                             - (aPlayer->foundryCount * 500);
@@ -213,6 +214,8 @@ static void BuyGrain(Player *aPlayer)
     Player *seller;
     int     sellerIndex;
     int     grain;
+    int     maxGrain;
+    int     totalPrice;
     char    input[80];
     bool    validSeller;
     bool    validGrain;
@@ -255,15 +258,32 @@ static void BuyGrain(Player *aPlayer)
 
     /* Get the amount of grain to buy. */
     validGrain = FALSE;
+    maxGrain = (((float) aPlayer->treasury) * 0.9) / seller->grainPrice;
     do
     {
+        /* Get the number of bushels to purchase. */
         move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
         printw("HOW MANY BUSHELS? ");
         getnstr(input, sizeof(input));
         grain = strtol(input, NULL, 0);
+
+        /* Compute the total grain purchase price, including marketplace */
+        /* markup.                                                       */
+        totalPrice = (((float) grain) * seller->grainPrice) / 0.9;
+
         if (grain > seller->grainForSale)
         {
             printw("YOU CAN'T BUY MORE GRAIN THEN THEY ARE SELLING!");
+            refresh();
+            sleep(DELAY_TIME);
+        }
+        else if (totalPrice > aPlayer->treasury)
+        {
+            move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+            printw("%s %s PLEASE RECONSIDER -\n",
+                   aPlayer->title,
+                   aPlayer->name);
+            printw("YOU CAN ONLY AFFORD TO BUY %d BUSHELS", maxGrain);
             refresh();
             sleep(DELAY_TIME);
         }
@@ -272,6 +292,12 @@ static void BuyGrain(Player *aPlayer)
             validGrain = TRUE;
         }
     } while (!validGrain);
+
+    /* Update player and seller state. */
+    aPlayer->grain += grain;
+    aPlayer->treasury -= totalPrice;
+    seller->treasury += grain * seller->grainPrice;
+    seller->grainForSale -= grain;
 }
 
 
