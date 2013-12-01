@@ -224,7 +224,7 @@ static void GameSetupScreen(void)
         refresh();
         getnstr(input, sizeof(input));
         playerCount = strtol(input, NULL, 0);
-    } while ((playerCount < 1) || (playerCount > 6));
+    } while (playerCount > 6);
 
     /* Get the player names. */
     for (i = 0; i < playerCount; i++)

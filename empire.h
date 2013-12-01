@@ -75,6 +75,10 @@ typedef struct
  *   grainPrice             Grain price.
  *   ratPct                 Percent of grain eaten by rats.
  *   grainHarvest           Grain harvest for year.
+ *   peopleGrainNeed        How much grain people need for year.
+ *   peopleGrainFeed        How much grain to feed people for year.
+ *   armyGrainNeed          How much grain army needs for year.
+ *   armyGrainFeed          How much grain to feed army for year.
  */
 
 typedef struct
@@ -101,6 +105,10 @@ typedef struct
     float                   grainPrice;
     int                     ratPct;
     int                     grainHarvest;
+    int                     peopleGrainNeed;
+    int                     peopleGrainFeed;
+    int                     armyGrainNeed;
+    int                     armyGrainFeed;
 } Player;
 
 
