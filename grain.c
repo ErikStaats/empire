@@ -51,13 +51,35 @@ static void FeedCountry(Player *aPlayer);
 
 void GrainScreen(Player *aPlayer)
 {
+    int usableLand;
+
     /* Determine what percentage of grain the rats ate. */
     aPlayer->ratPct = (rand() % 30) + 1;
     aPlayer->grain -= (aPlayer->grain * aPlayer->ratPct) / 100;
 
+    /* Determine the amount of usable land for grain. */
+    usableLand =   aPlayer->land
+                 - aPlayer->serfCount
+                 - (2 * aPlayer->nobleCount)
+                 - aPlayer->palaceCount
+                 - aPlayer->merchantCount
+                 - (2 * aPlayer->soldierCount);
+
+    /* Each bushel of grain in the reserves can be used to seed 3 acres of */
+    /* land.                                                               */
+    if (usableLand > (3 * aPlayer->grain))
+    {
+        usableLand = 3 * aPlayer->grain;
+    }
+
+    /* Each serf can farm 5 acres of land. */
+    if (usableLand > (5 * aPlayer->serfCount))
+    {
+        usableLand = 5 * aPlayer->serfCount;
+    }
+
     /* Determine the grain harvest. */
-    /*zzz not aPlayer->land */
-    aPlayer->grainHarvest =   (weather * aPlayer->land * 0.72)
+    aPlayer->grainHarvest =   (weather * usableLand * 0.72)
                             + ((rand() % 500) + 1)
                             - (aPlayer->foundryCount * 500);
     if (aPlayer->grainHarvest < 0)

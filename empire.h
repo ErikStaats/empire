@@ -71,6 +71,7 @@ typedef struct
  *   salesTax               Sales tax.
  *   incomeTax              Income tax.
  *   foundryCount           Count of number of foundries.
+ *   palaceCount            Count of work done on palace.
  *   grainForSale           Bushels of grain for sale.
  *   grainPrice             Grain price.
  *   ratPct                 Percent of grain eaten by rats.
@@ -101,6 +102,7 @@ typedef struct
     int                     salesTax;
     int                     incomeTax;
     int                     foundryCount;
+    int                     palaceCount;
     int                     grainForSale;
     float                   grainPrice;
     int                     ratPct;
