@@ -20,6 +20,7 @@
 /* Local includes. */
 #include "empire.h"
 #include "grain.h"
+#include "population.h"
 
 
 /*------------------------------------------------------------------------------
@@ -166,6 +167,9 @@ int main(argc, argv)
         {
             /* Show grain screen. */
             GrainScreen(&(playerList[i]));
+
+            /* Show population screen. */
+            PopulationScreen(&(playerList[i]));
         }
     }
 

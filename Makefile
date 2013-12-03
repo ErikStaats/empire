@@ -17,6 +17,6 @@ all: empire
 # Build rules.
 #
 
-empire: empire.c grain.c
-	gcc -g -lncurses -o empire empire.c grain.c
+empire: empire.c grain.c population.c
+	gcc -g -lncurses -o empire empire.c grain.c population.c
 
