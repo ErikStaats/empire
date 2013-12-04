@@ -182,6 +182,24 @@ int main(argc, argv)
 
 /*------------------------------------------------------------------------------
  *
+ * External functions.
+ */
+
+/*
+ *   Return a random integer value between 1 and the value specified by range,
+ * inclusive (i.e., [1, range]).  If range is 0, return 0.
+ *
+ *   range                  Range of random value.
+ */
+
+int rand_range(int range)
+{
+    return (range > 0) ? (rand() % range) + 1 : 0;
+}
+
+
+/*------------------------------------------------------------------------------
+ *
  * Internal functions.
  */
 
@@ -278,7 +296,7 @@ static void GameSetupScreen(void)
         /* Initialize the player's state. */
         player->defeated = FALSE;
         player->land = 10000;
-        player->grain = 15000 + ((rand() % 10000) + 1);
+        player->grain = 15000 + rand_range(10000);
         player->treasury = 1000;
         player->serfCount = 2000;
         player->soldierCount = 20;
@@ -306,7 +324,7 @@ static void NewYearScreen(void)
     year++;
 
     /* Update weather. */
-    weather = (rand() % ArraySize(weatherList)) + 1;
+    weather = rand_range(ArraySize(weatherList));
 
     /* Reset screen. */
     clear();
