@@ -189,6 +189,9 @@ int main(argc, argv)
                 gameOver = TRUE;
                 break;
             }
+
+            /* Show investments screen. */
+            InvestmentsScreen(player);
         }
     }
 
