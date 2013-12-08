@@ -54,7 +54,7 @@ void GrainScreen(Player *aPlayer)
     int usableLand;
 
     /* Determine what percentage of grain the rats ate. */
-    aPlayer->ratPct = rand_range(30);
+    aPlayer->ratPct = RandRange(30);
     aPlayer->grain -= (aPlayer->grain * aPlayer->ratPct) / 100;
 
     /* Determine the amount of usable land for grain. */
@@ -80,7 +80,7 @@ void GrainScreen(Player *aPlayer)
 
     /* Determine the grain harvest. */
     aPlayer->grainHarvest =   (weather * usableLand * 0.72)
-                            + rand_range(500)
+                            + RandRange(500)
                             - (aPlayer->foundryCount * 500);
     if (aPlayer->grainHarvest < 0)
         aPlayer->grainHarvest = 0;
@@ -261,7 +261,7 @@ static void BuyGrain(Player *aPlayer)
         seller = NULL;
 
     /* Validate that the seller has grain for sale. */
-    if ((seller == NULL) || (seller->defeated) || (seller->grainForSale == 0))
+    if ((seller == NULL) || (seller->dead) || (seller->grainForSale == 0))
     {
         printw("THAT COUNTRY HAS NONE FOR SALE!");
         refresh();

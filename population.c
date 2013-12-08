@@ -21,6 +21,14 @@
 
 /*------------------------------------------------------------------------------
  *
+ * Prototypes.
+ */
+
+static void PlayerDeath(Player *aPlayer);
+
+
+/*------------------------------------------------------------------------------
+ *
  * External population screen functions.
  */
 
@@ -65,10 +73,10 @@ void PopulationScreen(Player *aPlayer)
                  + aPlayer->nobleCount;
 
     /* Determine the number of babies born. */
-    born = rand_range(((int) (((float) population) / 9.5)));
+    born = RandRange(((int) (((float) population) / 9.5)));
 
     /* Determine the number of people who died from disease. */
-    diedDisease = rand_range(population / 22);
+    diedDisease = RandRange(population / 22);
 
     /* Determine the number of people who died of starvation and */
     /* malnutrition.                                             */
@@ -76,13 +84,14 @@ void PopulationScreen(Player *aPlayer)
     diedMalnutrition = 0;
     if (aPlayer->peopleGrainNeed > (2 * aPlayer->peopleGrainFeed))
     {
-        diedMalnutrition = rand_range(population/12 + 1);
-        diedStarvation = rand_range(population/16 + 1);
+        diedMalnutrition = RandRange(population/12 + 1);
+        diedStarvation = RandRange(population/16 + 1);
     }
     else if (aPlayer->peopleGrainNeed > aPlayer->peopleGrainFeed)
     {
-        diedMalnutrition = rand_range(population/15 + 1);
+        diedMalnutrition = RandRange(population/15 + 1);
     }
+    aPlayer->diedStarvation = diedStarvation;
 
     /* Determine the number of people who immigrated. */
     if (((float) aPlayer->peopleGrainFeed) >
@@ -90,9 +99,9 @@ void PopulationScreen(Player *aPlayer)
     {
         immigrated =
               ((int) sqrt(aPlayer->peopleGrainFeed - aPlayer->peopleGrainNeed))
-            - rand_range((int) (1.5 * ((float) aPlayer->customsTax)));
+            - RandRange((int) (1.5 * ((float) aPlayer->customsTax)));
         if (immigrated > 0)
-            immigrated = rand_range(((2 * immigrated) + 1));
+            immigrated = RandRange(((2 * immigrated) + 1));
         else
             immigrated = 0;
     }
@@ -105,18 +114,18 @@ void PopulationScreen(Player *aPlayer)
     merchantsImmigrated = 0;
     noblesImmigrated = 0;
     if ((immigrated / 5) > 0)
-        merchantsImmigrated = rand_range(immigrated / 5);
+        merchantsImmigrated = RandRange(immigrated / 5);
     if ((immigrated / 25) > 0)
-        noblesImmigrated = rand_range(immigrated / 25);
+        noblesImmigrated = RandRange(immigrated / 25);
 
     /* Determine the number of soldiers who died of starvation or deserted. */
     armyDiedStarvation = 0;
     armyDeserted = 0;
     if (aPlayer->armyGrainNeed > (2 * aPlayer->armyGrainFeed))
     {
-        armyDiedStarvation = rand_range(aPlayer->soldierCount/2 + 1);
+        armyDiedStarvation = RandRange(aPlayer->soldierCount/2 + 1);
         aPlayer->soldierCount -= armyDiedStarvation;
-        armyDeserted = rand_range(aPlayer->soldierCount / 5);
+        armyDeserted = RandRange(aPlayer->soldierCount / 5);
         aPlayer->soldierCount -= armyDeserted;
     }
 
@@ -169,5 +178,79 @@ void PopulationScreen(Player *aPlayer)
     /* Wait for player to be done. */
     printw("\n\n<ENTER>? ");
     getnstr(input, 80);
+
+    /* Check if player died. */
+    PlayerDeath(aPlayer);
 }
+
+
+/*
+ * Check if any event happened that killed the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ */
+
+static void PlayerDeath(Player *aPlayer)
+{
+    Country *country;
+
+    /* Get the player country. */
+    country = aPlayer->country;
+
+    /* If anyone starved to death, their mother might assassinate the ruler. */
+    if ((aPlayer->diedStarvation > 0) &&
+        (RandRange(aPlayer->diedStarvation) > RandRange(110)))
+    {
+        aPlayer->dead = TRUE;
+        clear();
+        move(0, 0);
+        printw("VERY SAD NEWS ...\n\n");
+        printw("%s %s OF %s HAS BEEN ASSASSINATED\n",
+            aPlayer->title,
+            aPlayer->name,
+            country->name);
+        printw("BY A CRAZED MOTHER WHOSE CHILD HAD STARVED TO DEATH. . .\n\n");
+    }
+
+    /* Check if the player died for any other reason. */
+    if (RandRange(100) == 1)
+    {
+        aPlayer->dead = TRUE;
+        clear();
+        move(0, 0);
+        printw("VERY SAD NEWS ...\n\n");
+        printw("%s %s ", aPlayer->title, aPlayer->name);
+        switch(RandRange(4))
+        {
+            case 1 :
+                printw("HAS BEEN ASSASSINATED BY AN AMBITIOUS\nNOBLE\n\n");
+                break;
+
+            case 2 :
+                printw("HAS BEEN KILLED FROM A FALL DURING\n"
+                       "THE ANNUAL FOX-HUNT.\n\n");
+                break;
+
+            case 3 :
+                printw("DIED OF ACUTE FOOD POISONING.\n"
+                       "THE ROYAL COOK WAS SUMMARILY EXECUTED.\n\n");
+                break;
+
+            case 4 :
+            default :
+                printw("PASSED AWAY THIS WINTER FROM A WEAK HEART.\n\n");
+                break;
+        }
+    }
+
+    /* If the player died, display the funeral. */
+    if (aPlayer->dead)
+    {
+        printw("THE OTHER NATION-STATES HAVE SENT REPRESENTATIVES TO THE\n");
+        printw("FUNERAL\n");
+        refresh();
+        sleep(2 * DELAY_TIME);
+    }
+}
+
 

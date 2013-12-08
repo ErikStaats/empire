@@ -58,7 +58,7 @@ typedef struct
  *   country                Player country.
  *   level                  Player level.
  *   title                  Player title.
- *   defeated               If true, player has been defeated.
+ *   dead                   If true, player is dead.
  *   land                   Land in acres.
  *   grain                  Grain reserves in bushels.
  *   treasury               Currency treasury.
@@ -80,6 +80,7 @@ typedef struct
  *   peopleGrainFeed        How much grain to feed people for year.
  *   armyGrainNeed          How much grain army needs for year.
  *   armyGrainFeed          How much grain to feed army for year.
+ *   diedStarvation         How many people died of starvation.
  */
 
 typedef struct
@@ -89,7 +90,7 @@ typedef struct
     Country                *country;
     int                     level;
     char                    title[80];
-    bool                    defeated;
+    bool                    dead;
     int                     land;
     int                     grain;
     int                     treasury;
@@ -111,6 +112,7 @@ typedef struct
     int                     peopleGrainFeed;
     int                     armyGrainNeed;
     int                     armyGrainFeed;
+    int                     diedStarvation;
 } Player;
 
 
@@ -150,7 +152,7 @@ extern int done;
  * Prototypes.
  */
 
-int rand_range(int range);
+int RandRange(int range);
 
 
 /*------------------------------------------------------------------------------

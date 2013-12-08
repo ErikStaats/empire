@@ -119,7 +119,7 @@ char *weatherList[] =
  *   year                   Current year.
  *   weather                Weather for year, 1 based.
  *   barbarianLand          Amount of barbarian land in acres.
- *   done                   If true, game is done.
+ *   gameOver               If true, game is over.
  */
 
 Player playerList[COUNTRY_COUNT];
@@ -127,7 +127,7 @@ int playerCount = 0;
 int year = 0;
 int weather;
 int barbarianLand = 6000;
-int done = FALSE;
+int gameOver = FALSE;
 
 
 /*------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ int done = FALSE;
 int main(argc, argv)
 {
     Player *player;
-    int     i;
+    int     i, j;
 
     /* Initialize the screen. */
     initscr();
@@ -156,8 +156,8 @@ int main(argc, argv)
     /* Set up game options. */
     GameSetupScreen();
 
-    /* Run game until it's done. */
-    while (!done)
+    /* Run game until it's over. */
+    while (!gameOver)
     {
         /* Start a new year. */
         NewYearScreen();
@@ -165,11 +165,30 @@ int main(argc, argv)
         /* Go through each human player. */
         for (i = 0; i < playerCount; i++)
         {
+            /* Get player. */
+            player = &(playerList[i]);
+
+            /* Skip dead players. */
+            if (player->dead)
+                continue;
+
             /* Show grain screen. */
-            GrainScreen(&(playerList[i]));
+            GrainScreen(player);
 
             /* Show population screen. */
-            PopulationScreen(&(playerList[i]));
+            PopulationScreen(player);
+
+            /* If all human players have died, end game. */
+            for (j = 0; j < playerCount; j++)
+            {
+                if (!playerList[j].dead)
+                    break;
+            }
+            if (j == playerCount)
+            {
+                gameOver = TRUE;
+                break;
+            }
         }
     }
 
@@ -192,7 +211,7 @@ int main(argc, argv)
  *   range                  Range of random value.
  */
 
-int rand_range(int range)
+int RandRange(int range)
 {
     return (range > 0) ? (rand() % range) + 1 : 0;
 }
@@ -294,9 +313,9 @@ static void GameSetupScreen(void)
                  country->titleList[player->level]);
 
         /* Initialize the player's state. */
-        player->defeated = FALSE;
+        player->dead = FALSE;
         player->land = 10000;
-        player->grain = 15000 + rand_range(10000);
+        player->grain = 15000 + RandRange(10000);
         player->treasury = 1000;
         player->serfCount = 2000;
         player->soldierCount = 20;
@@ -324,7 +343,7 @@ static void NewYearScreen(void)
     year++;
 
     /* Update weather. */
-    weather = rand_range(ArraySize(weatherList));
+    weather = RandRange(ArraySize(weatherList));
 
     /* Reset screen. */
     clear();
