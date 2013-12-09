@@ -94,7 +94,7 @@ void GrainScreen(Player *aPlayer)
     /* Determine the amount of grain required by the army. */
     aPlayer->armyGrainNeed = 8 * aPlayer->soldierCount;
 
-    /* Draw the grain  screen. */
+    /* Draw the grain screen. */
     DrawGrainScreen(aPlayer);
 
     /* Trade grain and land. */
@@ -111,7 +111,7 @@ void GrainScreen(Player *aPlayer)
  */
 
 /*
- * Draw the grain  screen for the player specified by aPlayer.
+ * Draw the grain screen for the player specified by aPlayer.
  *
  *   aPlayer                Player.
  */

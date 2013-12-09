@@ -109,6 +109,7 @@ void PopulationScreen(Player *aPlayer)
     {
         immigrated = 0;
     }
+    aPlayer->immigrated = immigrated;
 
     /* Determine the number of merchants and nobles who immigrated. */
     merchantsImmigrated = 0;

@@ -328,7 +328,10 @@ static void GameSetupScreen(void)
         player->customsTax = 20;
         player->salesTax = 5;
         player->incomeTax = 35;
+        player->marketplaceCount = 0;
+        player->grainMillCount = 0;
         player->foundryCount = 0;
+        player->shipyardCount = 0;
         player->palaceCount = 0;
         player->grainForSale = 0;
         player->grainPrice = 0.0;

@@ -64,13 +64,25 @@ typedef struct
  *   treasury               Currency treasury.
  *   serfCount              Count of number of serfs.
  *   soldierCount           Count of number of soldiers.
+ *   soldierRevenue         Revenue from soldiers.
  *   nobleCount             Count of number of nobles.
  *   merchantCount          Count of number of merchants.
+ *   immigrated             Number of people who immigrated into country.
  *   armyEfficiency         Efficiency of army.
  *   customsTax             Customs tax.
+ *   customsTaxRevenue      Revenue from customs tax.
  *   salesTax               Sales tax.
+ *   salesTaxRevenue        Revenue from sales tax.
  *   incomeTax              Income tax.
+ *   incomeTaxRevenue       Revenue from income tax.
+ *   marketplaceCount       Count of number of marketplaces.
+ *   marketplaceRevenue     Revenue from marketplaces.
+ *   grainMillCount         Count of number of grain mills.
+ *   grainMillRevenue       Revenue from grain mills.
  *   foundryCount           Count of number of foundries.
+ *   foundryRevenue         Revenue from foundries.
+ *   shipyardCount          Count of number of shipyards.
+ *   shipyardRevenue        Revenue from shipyards.
  *   palaceCount            Count of work done on palace.
  *   grainForSale           Bushels of grain for sale.
  *   grainPrice             Grain price.
@@ -96,13 +108,25 @@ typedef struct
     int                     treasury;
     int                     serfCount;
     int                     soldierCount;
+    int                     soldierRevenue;
     int                     nobleCount;
     int                     merchantCount;
+    int                     immigrated;
     int                     armyEfficiency;
     int                     customsTax;
+    int                     customsTaxRevenue;
     int                     salesTax;
+    int                     salesTaxRevenue;
     int                     incomeTax;
+    int                     incomeTaxRevenue;
+    int                     marketplaceCount;
+    int                     marketplaceRevenue;
+    int                     grainMillCount;
+    int                     grainMillRevenue;
     int                     foundryCount;
+    int                     foundryRevenue;
+    int                     shipyardCount;
+    int                     shipyardRevenue;
     int                     palaceCount;
     int                     grainForSale;
     float                   grainPrice;
