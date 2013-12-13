@@ -26,7 +26,9 @@
 
 static void DrawInvestmentsScreen(Player *aPlayer);
 
-static void DisplayRevenues(Player *aPlayer);
+static void DisplayTaxRevenues(Player *aPlayer);
+
+static void DisplayInvestments(Player *aPlayer);
 
 static void ComputeRevenues(Player *aPlayer);
 
@@ -75,25 +77,28 @@ static void DrawInvestmentsScreen(Player *aPlayer)
     clear();
     move(0, 0);
 
-    /* Display revenues. */
-    DisplayRevenues(aPlayer);
+    /* Display tax revenues. */
+    DisplayTaxRevenues(aPlayer);
+
+    /* Display investments. */
+    DisplayInvestments(aPlayer);
 }
 
 
 /*
- * Display revenues for the player specified by aPlayer.
+ * Display tax revenues for the player specified by aPlayer.
  *
  *   aPlayer                Player.
  */
 
-void DisplayRevenues(Player *aPlayer)
+void DisplayTaxRevenues(Player *aPlayer)
 {
     Country *country;
 
     /* Get the player country. */
     country = aPlayer->country;
 
-    /* Display revenues. */
+    /* Display tax revenues. */
     printw("STATE REVENUES:    TREASURY=%6d %s\n",
            aPlayer->treasury,
            country->currency);
@@ -104,6 +109,32 @@ void DisplayRevenues(Player *aPlayer)
     mvprintw(3, 1, "%d", aPlayer->customsTaxRevenue);
     mvprintw(3, 17, "%d", aPlayer->salesTaxRevenue);
     mvprintw(3, 33, "%d", aPlayer->incomeTaxRevenue);
+}
+
+
+/*
+ * Display investments for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ */
+
+void DisplayInvestments(Player *aPlayer)
+{
+    /* Display investments. */
+    move(5, 0);
+    printw("INVESTMENTS     NUMBER          PROFITS         COST\n");
+    printw("1) MARKETPLACES % -6d          % -6d          1000\n",
+           aPlayer->marketplaceCount, aPlayer->marketplaceRevenue);
+    printw("2) GRAIN MILLS  % -6d          % -6d          2000\n",
+           aPlayer->grainMillCount, aPlayer->grainMillRevenue);
+    printw("3) FOUNDRIES    % -6d          % -6d          7000\n",
+           aPlayer->foundryCount, aPlayer->foundryRevenue);
+    printw("4) SHIPYARDS    % -6d          % -6d          8000\n",
+           aPlayer->shipyardCount, aPlayer->shipyardRevenue);
+    printw("5) SOLDIERS     % -6d          % -6d          8\n",
+           aPlayer->soldierCount, aPlayer->soldierRevenue);
+    printw("6) PALACE        %d%% COMPLETED                   5000\n",
+           10 * aPlayer->palaceCount);
 }
 
 
