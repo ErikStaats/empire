@@ -97,6 +97,13 @@ void DisplayRevenues(Player *aPlayer)
     printw("STATE REVENUES:    TREASURY=%6d %s\n",
            aPlayer->treasury,
            country->currency);
+    printw("CUSTOMS DUTY    SALES TAX       INCOME TAX\n");
+    mvprintw(2, 1, "%d %%", aPlayer->customsTax);
+    mvprintw(2, 17, "%d %%", aPlayer->salesTax);
+    mvprintw(2, 33, "%d %%", aPlayer->incomeTax);
+    mvprintw(3, 1, "%d", aPlayer->customsTaxRevenue);
+    mvprintw(3, 17, "%d", aPlayer->salesTaxRevenue);
+    mvprintw(3, 33, "%d", aPlayer->incomeTaxRevenue);
 }
 
 
