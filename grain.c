@@ -191,7 +191,7 @@ static void TradeGrainAndLand(Player *aPlayer)
     doneTrading = FALSE;
     while (!doneTrading)
     {
-        /* Draw grain  screen. */
+        /* Draw grain screen. */
         DrawGrainScreen(aPlayer);
 
         /* Display options. */

@@ -24,6 +24,14 @@
  * Prototypes.
  */
 
+static void SetTaxes(Player *aPlayer);
+
+static void SetCustomsTax(Player *aPlayer);
+
+static void SetSalesTax(Player *aPlayer);
+
+static void SetIncomeTax(Player *aPlayer);
+
 static void DrawInvestmentsScreen(Player *aPlayer);
 
 static void DisplayTaxRevenues(Player *aPlayer);
@@ -55,15 +63,143 @@ void InvestmentsScreen(Player *aPlayer)
     DrawInvestmentsScreen(aPlayer);
 
     /* Set taxes. */
-    move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
-    printw("1) CUSTOMS DUTY  2) SALES TAX  3) INCOME TAX? ");
-    getnstr(input, sizeof(input));
+    SetTaxes(aPlayer);
 }
 
 /*------------------------------------------------------------------------------
  *
  * Internal investments screen functions.
  */
+
+/*
+ * Set taxes for the player specified by aPlayer.
+ *
+ *   aPlayer                Player.
+ */
+
+void SetTaxes(Player *aPlayer)
+{
+    char input[80];
+    bool done;
+
+    /* Set taxes. */
+    done = FALSE;
+    while (!done)
+    {
+        /* Draw the investments screen. */
+        DrawInvestmentsScreen(aPlayer);
+
+        /* Get tax to set. */
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw("1) CUSTOMS DUTY  2) SALES TAX  3) INCOME TAX? ");
+        getnstr(input, sizeof(input));
+
+        /* Parse input. */
+        switch (strtol(input, NULL, 0))
+        {
+            case 0 :
+                done = TRUE;
+                break;
+
+            case 1 :
+                SetCustomsTax(aPlayer);
+                break;
+
+            case 2 :
+                SetSalesTax(aPlayer);
+                break;
+
+            case 3 :
+                SetIncomeTax(aPlayer);
+                break;
+
+            default :
+                break;
+        }
+    }
+}
+
+
+/*
+ * Set customs tax for the player specified by aPlayer
+ *
+ *   aPlayer                Player.
+ */
+
+void SetCustomsTax(Player *aPlayer)
+{
+    char input[80];
+    int  customsTax;
+    bool validCustomsTax;
+
+    /* Get the new customs tax. */
+    validCustomsTax = FALSE;
+    do
+    {
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw("GIVE NEW CUSTOMS TAX (MAX=50%)? ");
+        getnstr(input, sizeof(input));
+        customsTax = strtol(input, NULL, 0);
+        if ((customsTax >= 0) && (customsTax <= 50))
+            validCustomsTax = TRUE;
+    } while (!validCustomsTax);
+    aPlayer->customsTax = customsTax;
+}
+
+
+/*
+ * Set sales tax for the player specified by aPlayer
+ *
+ *   aPlayer                Player.
+ */
+
+void SetSalesTax(Player *aPlayer)
+{
+    char input[80];
+    int  salesTax;
+    bool validSalesTax;
+
+    /* Get the new sales tax. */
+    validSalesTax = FALSE;
+    do
+    {
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw("GIVE NEW SALES TAX (MAX=20%)? ");
+        getnstr(input, sizeof(input));
+        salesTax = strtol(input, NULL, 0);
+        if ((salesTax >= 0) && (salesTax <= 20))
+            validSalesTax = TRUE;
+    } while (!validSalesTax);
+    aPlayer->salesTax = salesTax;
+}
+
+
+/*
+ * Set income tax for the player specified by aPlayer
+ *
+ *   aPlayer                Player.
+ */
+
+void SetIncomeTax(Player *aPlayer)
+{
+    char input[80];
+    int  incomeTax;
+    bool validIncomeTax;
+
+    /* Get the new income tax. */
+    validIncomeTax = FALSE;
+    do
+    {
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw("GIVE NEW INCOME TAX (MAX=35%)? ");
+        getnstr(input, sizeof(input));
+        incomeTax = strtol(input, NULL, 0);
+        if ((incomeTax >= 0) && (incomeTax <= 35))
+            validIncomeTax = TRUE;
+    } while (!validIncomeTax);
+    aPlayer->incomeTax = incomeTax;
+}
+
 
 /*
  * Draw the investments screen for the player specified by aPlayer.
