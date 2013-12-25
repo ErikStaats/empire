@@ -114,8 +114,6 @@ int investmentCost[] =
 
 void InvestmentsScreen(Player *aPlayer)
 {
-    char input[80];
-
     /* Compute revenues. */
     ComputeRevenues(aPlayer);
 

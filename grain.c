@@ -438,6 +438,7 @@ static void SellLand(Player *aPlayer)
     /* Update land and treasury. */
     aPlayer->treasury += 2 * landToSell;
     aPlayer->land -= landToSell;
+    barbarianLand += landToSell;
 }
 
 

@@ -178,6 +178,10 @@ extern int done;
 
 int RandRange(int range);
 
+void InvestmentsScreen(Player *aPlayer);
+
+void AttackScreen(Player *aPlayer);
+
 
 /*------------------------------------------------------------------------------
  *

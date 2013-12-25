@@ -192,6 +192,9 @@ int main(argc, argv)
 
             /* Show investments screen. */
             InvestmentsScreen(player);
+
+            /* Show attack screen. */
+            AttackScreen(player);
         }
     }
 
