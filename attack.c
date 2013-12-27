@@ -131,9 +131,6 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     bool soldierCountValid;
 
     /* Can't attack other players until the third year. */
-/*ZZZ*/
-if (0)
-/*ZZZ*/
     if (year < 3)
     {
         move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
