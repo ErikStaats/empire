@@ -20,11 +20,13 @@
  *   COUNTRY_COUNT          Count of the number of countries.
  *   TITLE_COUNT            Count of the number of ruler titles.
  *   DELAY_TIME             Time in seconds to delay.
+ *   SERF_EFFICIENCY        Serf fighting efficiency (10 = 100%).
  */
 
 #define COUNTRY_COUNT       6
 #define TITLE_COUNT         4
 #define DELAY_TIME          3
+#define SERF_EFFICIENCY     5
 
 
 /*------------------------------------------------------------------------------

@@ -129,6 +129,7 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     int  soldierKillCount;
     int  landCaptured;
     bool soldierCountValid;
+    bool targetSerfs = FALSE;
 
     /* Can't attack other players until the third year. */
     if (year < 3)
@@ -166,8 +167,17 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
 
     /* Get soldier information. */
     soldierEfficiency = aPlayer->armyEfficiency;
-    targetSoldierCount = aTargetPlayer->soldierCount;
-    targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
+    if (aTargetPlayer->soldierCount > 0)
+    {
+        targetSoldierCount = aTargetPlayer->soldierCount;
+        targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
+    }
+    else
+    {
+        targetSerfs = TRUE;
+        targetSoldierCount = aTargetPlayer->serfCount;
+        targetSoldierEfficiency = SERF_EFFICIENCY;
+    }
 
     /* Battle. */
     landCaptured = 0;
@@ -184,6 +194,11 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
                  aTargetPlayer->country->name);
         mvprintw(4, 51, "%d", soldierCount);
         mvprintw(5, 51, "%d", targetSoldierCount);
+        if (targetSerfs)
+        {
+            mvprintw(8, 0, "%s'S SERFS ARE FORCED TO DEFEND THEIR COUNTRY!",
+                     aTargetPlayer->country->name);
+        }
         refresh();
         usleep(250000);
 
@@ -249,7 +264,10 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
 
     /* Update soldiers and land. */
     aPlayer->soldierCount += soldierCount;
-    aTargetPlayer->soldierCount = targetSoldierCount;
+    if (targetSerfs)
+        aTargetPlayer->serfCount = targetSoldierCount;
+    else
+        aTargetPlayer->soldierCount = targetSoldierCount;
     aPlayer->land += landCaptured;
     aTargetPlayer->land -= landCaptured;
 }
