@@ -842,10 +842,10 @@ bool ValidateInvestment(Player *aPlayer, int investment, int investmentCount)
     /* If investment is invalid, notify the player. */
     if (!valid && (strlen(invalidMessage) > 0))
     {
-            move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
-            printw(invalidMessage);
-            refresh();
-            sleep(DELAY_TIME);
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw(invalidMessage);
+        refresh();
+        sleep(DELAY_TIME);
     }
 
     return valid;
