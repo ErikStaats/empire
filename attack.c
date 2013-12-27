@@ -130,6 +130,8 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     int  landCaptured;
     bool soldierCountValid;
     bool targetSerfs = FALSE;
+    bool targetOverrun = FALSE;
+    bool battleDone;
 
     /* Can't attack other players until the third year. */
     if (year < 3)
@@ -181,7 +183,8 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
 
     /* Battle. */
     landCaptured = 0;
-    while (1)
+    battleDone = FALSE;
+    while (!battleDone)
     {
         /* Show soldiers remaining. */
         clear();
@@ -213,6 +216,10 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
             soldierCount -= soldierKillCount;
             if (soldierCount < 0)
                 soldierCount = 0;
+
+            /* Battle is done if all target land has been captured. */
+            if (landCaptured >= aTargetPlayer->land)
+                battleDone = TRUE;
         }
         else
         {
@@ -221,6 +228,8 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
                             - RandRange(soldierKillCount + 5);
             if (landCaptured < 0)
                 landCaptured = 0;
+            else if (landCaptured > aTargetPlayer->land)
+                landCaptured = aTargetPlayer->land;
             targetSoldierCount -= soldierKillCount;
             if (targetSoldierCount < 0)
                 targetSoldierCount = 0;
@@ -228,13 +237,32 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
 
         /* Keep battling until one army is defeated. */
         if ((soldierCount == 0) || (targetSoldierCount == 0))
-            break;
+            battleDone = TRUE;
     }
 
     /* Display battle results. */
     clear();
     mvprintw(1, 23, "BATTLE OVER\n\n");
-    if (soldierCount > 0)
+    if (   (soldierCount > 0)
+        && (targetSerfs || (landCaptured >= aTargetPlayer->land)))
+    {
+        /* Target player overrun. */
+        targetOverrun = TRUE;
+        printw("THE COUNTRY OF %s WAS OVERUN!\n", aTargetPlayer->country->name);
+        printw("ALL ENEMY NOBLES WERE SUMMARILY EXECUTED!\n\n\n");
+        printw("THE REMAINING ENEMY SOLDIERS "
+               "WERE IMPRISONED. ALL ENEMY SERFS\n");
+        printw("HAVE PLEDGED OATHS OF FEALTY TO "
+               "YOU, AND SHOULD NOW BE CONSID-\n");
+        printw("ERED TO BE YOUR PEOPLE TOO. ALL "
+               "ENEMY MERCHANTS FLED THE COUN-\n");
+        printw("TRY. UNFORTUNATELY, ALL ENEMY "
+               "ASSETS WERE SACKED AND DESTROYED\n");
+        printw("BY YOUR REVENGEFUL ARMY IN A "
+               "DRUNKEN RIOT FOLLOWING THE VICTORY\n");
+        printw("CELEBRATION.\n");
+    }
+    else if (soldierCount > 0)
     {
         /* Player won. */
         printw("THE FORCES OF %s %s WERE VICTORIOUS.\n",
@@ -262,7 +290,7 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     printw("<ENTER>? ");
     getnstr(input, sizeof(input));
 
-    /* Update soldiers and land. */
+    /* Update soldiers, land, etc. */
     aPlayer->soldierCount += soldierCount;
     if (targetSerfs)
         aTargetPlayer->serfCount = targetSoldierCount;
@@ -270,6 +298,11 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
         aTargetPlayer->soldierCount = targetSoldierCount;
     aPlayer->land += landCaptured;
     aTargetPlayer->land -= landCaptured;
+    if (targetOverrun)
+    {
+        aPlayer->serfCount += aTargetPlayer->serfCount;
+        aTargetPlayer->dead = TRUE;
+    }
 }
 
 
@@ -295,7 +328,7 @@ static void DrawAttackScreen(Player *aPlayer)
     printw("LAND HOLDINGS:\n\n");
     for (i = 0; i < COUNTRY_COUNT + 1; i++)
     {
-        /* Get the country name and player land. */
+        /* Get the country name and player land.  Don't display dead players. */
         if (i == 0)
         {
             countryName = "BARBARIANS";
@@ -304,6 +337,8 @@ static void DrawAttackScreen(Player *aPlayer)
         else
         {
             player = &(playerList[i - 1]);
+            if (player->dead)
+                continue;
             country = player->country;
             countryName = country->name;
             playerLand = player->land;
