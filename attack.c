@@ -31,6 +31,8 @@ static void AttackBarbarians(Player *aPlayer);
 
 static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer);
 
+static void Sack(Player *aTargetPlayer);
+
 static void DrawAttackScreen(Player *aPlayer);
 
 
@@ -287,6 +289,11 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
             printw(" 0 ACRES WERE SEIZED.\n");
         }
     }
+
+    /* Check for sacking. */
+    if (!targetOverrun && (landCaptured > (aTargetPlayer->land / 3)))
+        Sack(aTargetPlayer);
+
     printw("<ENTER>? ");
     getnstr(input, sizeof(input));
 
@@ -305,6 +312,74 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     }
 }
 
+
+/*
+ * Sack the player specified by aTargetPlayer.
+ *
+ *   aTargetPlayer          Player to sack.
+ */
+
+static void Sack(Player *aTargetPlayer)
+{
+    int  sackCount;
+
+    /* Sack serfs. */
+    if (aTargetPlayer->serfCount > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->serfCount);
+        aTargetPlayer->serfCount -= sackCount;
+        printw(" %d ENEMY SERFS WERE BEATEN AND MURDERED BY YOUR TROOPS!\n",
+               sackCount);
+    }
+
+    /* Sack marketplaces. */
+    if (aTargetPlayer->marketplaceCount > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->marketplaceCount);
+        aTargetPlayer->marketplaceCount -= sackCount;
+        printw(" %d ENEMY MARKETPLACES WERE DESTROYED\n", sackCount);
+    }
+
+    /* Sack grain. */
+    if (aTargetPlayer->grain > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->grain);
+        aTargetPlayer->grain -= sackCount;
+        printw(" %d BUSHELS OF ENEMY GRAIN WERE BURNED\n", sackCount);
+    }
+
+    /* Sack grain mills. */
+    if (aTargetPlayer->grainMillCount > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->grainMillCount);
+        aTargetPlayer->grainMillCount -= sackCount;
+        printw(" %d ENEMY GRAIN MILLS WERE SABOTAGED\n", sackCount);
+    }
+
+    /* Sack foundries. */
+    if (aTargetPlayer->foundryCount > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->foundryCount);
+        aTargetPlayer->foundryCount -= sackCount;
+        printw(" %d ENEMY FOUNDRIES WERE LEVELED\n", sackCount);
+    }
+
+    /* Sack shipyards. */
+    if (aTargetPlayer->shipyardCount > 0)
+    {
+        sackCount = RandRange(aTargetPlayer->shipyardCount);
+        aTargetPlayer->shipyardCount -= sackCount;
+        printw(" %d ENEMY SHIPYARDS WERE OVER-RUN\n", sackCount);
+    }
+
+    /* Sack nobles. */
+    if (aTargetPlayer->nobleCount > 2)
+    {
+        sackCount = RandRange(aTargetPlayer->nobleCount / 2);
+        aTargetPlayer->nobleCount -= sackCount;
+        printw(" %d ENEMY NOBLES WERE SUMMARILY EXECUTED\n", sackCount);
+    }
+}
 
 /*
  * Draw the attack screen for the player specified by aPlayer.
