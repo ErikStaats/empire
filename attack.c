@@ -13,6 +13,7 @@
 
 /* System includes. */
 #include <ncurses.h>
+#include <string.h>
 
 /* Local includes. */
 #include "empire.h"
@@ -30,6 +31,12 @@
 static void AttackBarbarians(Player *aPlayer);
 
 static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer);
+
+static void GetSoldiersToAttack(Battle *aBattle);
+
+static void RunBattle(Battle *aBattle);
+
+static void DisplayBattleResults(Battle *aBattle);
 
 static void Sack(Player *aTargetPlayer);
 
@@ -119,21 +126,12 @@ static void AttackBarbarians(Player *aPlayer)
  * aPlayer.
  *
  *   aPlayer                Player.
+ *   aTargetPlayer          Player to attack.
  */
 
 static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
 {
-    char input[80];
-    int  soldierCount;
-    int  soldierEfficiency;
-    int  targetSoldierCount;
-    int  targetSoldierEfficiency;
-    int  soldierKillCount;
-    int  landCaptured;
-    bool soldierCountValid;
-    bool targetSerfs = FALSE;
-    bool targetOverrun = FALSE;
-    bool battleDone;
+    Battle battle;
 
     /* Can't attack other players until the third year. */
     if (year < 3)
@@ -146,42 +144,137 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
         return;
     }
 
+    /* Initialize the battle information. */
+    memset(&battle, 0, sizeof(battle));
+
+    /* Set the player battle information. */
+    battle.player = aPlayer;
+    battle.soldierEfficiency = aPlayer->armyEfficiency;
+    snprintf(battle.soldierLabel,
+             sizeof(battle.soldierLabel),
+             "%s %s OF %s",
+             aPlayer->title,
+             aPlayer->name,
+             aPlayer->country->name);
+    GetSoldiersToAttack(&battle);
+
+    /* Set the target battle information. */
+    battle.targetPlayer = aTargetPlayer;
+    battle.targetLand = aTargetPlayer->land;
+    snprintf(battle.targetSoldierLabel,
+             sizeof(battle.targetSoldierLabel),
+             "%s %s OF %s",
+             aTargetPlayer->title,
+             aTargetPlayer->name,
+             aTargetPlayer->country->name);
+    if (aTargetPlayer->soldierCount > 0)
+    {
+        battle.targetSoldierCount = aTargetPlayer->soldierCount;
+        battle.targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
+    }
+    else
+    {
+        battle.targetSerfs = TRUE;
+        battle.targetSoldierCount = aTargetPlayer->serfCount;
+        battle.targetSoldierEfficiency = SERF_EFFICIENCY;
+    }
+
+    /* Battle. */
+    RunBattle(&battle);
+    DisplayBattleResults(&battle);
+
+    /* Update soldiers, land, etc. */
+    aPlayer->soldierCount -=   battle.soldiersToAttackCount
+                             - battle.soldierCount;
+    if (battle.targetSerfs)
+        aTargetPlayer->serfCount = battle.targetSoldierCount;
+    else
+        aTargetPlayer->soldierCount = battle.targetSoldierCount;
+    aPlayer->land += battle.landCaptured;
+    aTargetPlayer->land -= battle.landCaptured;
+    if (battle.targetOverrun)
+    {
+        aPlayer->serfCount += aTargetPlayer->serfCount;
+        aTargetPlayer->dead = TRUE;
+    }
+}
+
+
+/*
+ *   Get the number of player soldiers to attack in the battle specified by
+ * aBattle.
+ *
+ *   aBattle                Battle for which to get attacking soldiers.
+ */
+
+static void GetSoldiersToAttack(Battle *aBattle)
+{
+    char    input[80];
+    Player *player;
+    int     soldiersToAttackCount;
+    bool    soldiersToAttackCountValid;
+
+    /* Get battle information. */
+    player = aBattle->player;
+
     /* Get the number of soldiers with which to attack. */
-    soldierCountValid = FALSE;
-    while (!soldierCountValid)
+    soldiersToAttackCountValid = FALSE;
+    while (!soldiersToAttackCountValid)
     {
         move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
         printw("HOW MANY SOLDIERS DO YOU WISH TO SEND? ");
         getnstr(input, sizeof(input));
-        soldierCount = strtol(input, NULL, 0);
-        if (soldierCount > aPlayer->soldierCount)
+        soldiersToAttackCount = strtol(input, NULL, 0);
+        if (soldiersToAttackCount > player->soldierCount)
         {
             move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
             printw("THINK AGAIN... YOU HAVE ONLY %d SOLDIERS",
-                   aPlayer->soldierCount);
+                   player->soldierCount);
             refresh();
             sleep(DELAY_TIME);
         }
         else
         {
-            soldierCountValid = TRUE;
+            soldiersToAttackCountValid = TRUE;
         }
     }
-    aPlayer->soldierCount -= soldierCount;
 
-    /* Get soldier information. */
-    soldierEfficiency = aPlayer->armyEfficiency;
-    if (aTargetPlayer->soldierCount > 0)
-    {
-        targetSoldierCount = aTargetPlayer->soldierCount;
-        targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
-    }
-    else
-    {
-        targetSerfs = TRUE;
-        targetSoldierCount = aTargetPlayer->serfCount;
-        targetSoldierEfficiency = SERF_EFFICIENCY;
-    }
+    /* Update battle information. */
+    aBattle->soldiersToAttackCount = soldiersToAttackCount;
+    aBattle->soldierCount = soldiersToAttackCount;
+}
+
+
+/*
+ * Run the battle specified by aBattle.
+ *
+ *   aBattle                Battle to run.
+ */
+
+static void RunBattle(Battle *aBattle)
+{
+    Player *player;
+    Player *targetPlayer;
+    int     soldierCount;
+    int     soldierEfficiency;
+    int     targetSoldierCount;
+    int     targetSoldierEfficiency;
+    int     targetLand;
+    int     soldierKillCount;
+    int     landCaptured = 0;
+    bool    targetSerfs = FALSE;
+    bool    targetOverrun = FALSE;
+    bool    battleDone;
+
+    /* Get battle information. */
+    player = aBattle->player;
+    targetPlayer = aBattle->targetPlayer;
+    soldierCount = aBattle->soldierCount;
+    soldierEfficiency = aBattle->soldierEfficiency;
+    targetSoldierCount = aBattle->targetSoldierCount;
+    targetSoldierEfficiency = aBattle->targetSoldierEfficiency;
+    targetLand = aBattle->targetLand;
+    targetSerfs = aBattle->targetSerfs;
 
     /* Battle. */
     landCaptured = 0;
@@ -191,18 +284,14 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
         /* Show soldiers remaining. */
         clear();
         mvprintw(2, 41, "SOLDIERS REMAINING:");
-        mvprintw(4, 13, "%s %s OF %s:",
-                 aPlayer->title, aPlayer->name, aPlayer->country->name);
-        mvprintw(5, 13, "%s %s OF %s:",
-                 aTargetPlayer->title,
-                 aTargetPlayer->name,
-                 aTargetPlayer->country->name);
+        mvprintw(4, 13, "%s:", aBattle->soldierLabel);
+        mvprintw(5, 13, "%s:", aBattle->targetSoldierLabel);
         mvprintw(4, 51, "%d", soldierCount);
         mvprintw(5, 51, "%d", targetSoldierCount);
         if (targetSerfs)
         {
             mvprintw(8, 0, "%s'S SERFS ARE FORCED TO DEFEND THEIR COUNTRY!",
-                     aTargetPlayer->country->name);
+                     targetPlayer->country->name);
         }
         refresh();
         usleep(250000);
@@ -220,7 +309,7 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
                 soldierCount = 0;
 
             /* Battle is done if all target land has been captured. */
-            if (landCaptured >= aTargetPlayer->land)
+            if (landCaptured >= targetLand)
                 battleDone = TRUE;
         }
         else
@@ -230,8 +319,8 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
                             - RandRange(soldierKillCount + 5);
             if (landCaptured < 0)
                 landCaptured = 0;
-            else if (landCaptured > aTargetPlayer->land)
-                landCaptured = aTargetPlayer->land;
+            else if (landCaptured > targetLand)
+                landCaptured = targetLand;
             targetSoldierCount -= soldierKillCount;
             if (targetSoldierCount < 0)
                 targetSoldierCount = 0;
@@ -242,15 +331,52 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
             battleDone = TRUE;
     }
 
+    /* Update battle information. */
+    aBattle->soldierCount = soldierCount;
+    aBattle->targetSoldierCount = targetSoldierCount;
+    aBattle->landCaptured = landCaptured;
+    if (soldierCount > 0)
+    {
+        aBattle->targetDefeated = TRUE;
+        if (targetSerfs || (landCaptured >= targetLand))
+            aBattle->targetOverrun = TRUE;
+    }
+}
+
+
+/*
+ * Display results of the battle specified by aBattle.
+ *
+ *   aBattle                Battle for which to display results.
+ */
+
+static void DisplayBattleResults(Battle *aBattle)
+{
+    char    input[80];
+    Player *player;
+    Player *targetPlayer;
+    int     soldierCount;
+    int     targetLand;
+    int     landCaptured;
+    bool    targetSerfs;
+    bool    targetOverrun = FALSE;
+
+    /* Get battle information. */
+    player = aBattle->player;
+    targetPlayer = aBattle->targetPlayer;
+    soldierCount = aBattle->soldierCount;
+    targetLand = aBattle->targetLand;
+    targetSerfs = aBattle->targetSerfs;
+    landCaptured = aBattle->landCaptured;
+
     /* Display battle results. */
     clear();
     mvprintw(1, 23, "BATTLE OVER\n\n");
-    if (   (soldierCount > 0)
-        && (targetSerfs || (landCaptured >= aTargetPlayer->land)))
+    if (aBattle->targetOverrun)
     {
         /* Target player overrun. */
         targetOverrun = TRUE;
-        printw("THE COUNTRY OF %s WAS OVERUN!\n", aTargetPlayer->country->name);
+        printw("THE COUNTRY OF %s WAS OVERUN!\n", targetPlayer->country->name);
         printw("ALL ENEMY NOBLES WERE SUMMARILY EXECUTED!\n\n\n");
         printw("THE REMAINING ENEMY SOLDIERS "
                "WERE IMPRISONED. ALL ENEMY SERFS\n");
@@ -264,18 +390,18 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
                "DRUNKEN RIOT FOLLOWING THE VICTORY\n");
         printw("CELEBRATION.\n");
     }
-    else if (soldierCount > 0)
+    else if (aBattle->targetDefeated)
     {
         /* Player won. */
         printw("THE FORCES OF %s %s WERE VICTORIOUS.\n",
-               aPlayer->title,
-               aPlayer->name);
+               player->title,
+               player->name);
         printw(" %d ACRES WERE SEIZED.\n", landCaptured);
     }
     else
     {
         /* Player lost. */
-        printw("%s %s WAS DEFEATED.\n", aPlayer->title, aPlayer->name);
+        printw("%s %s WAS DEFEATED.\n", player->title, player->name);
         if (landCaptured > 2)
         {
             landCaptured /= RandRange(3);
@@ -291,25 +417,15 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     }
 
     /* Check for sacking. */
-    if (!targetOverrun && (landCaptured > (aTargetPlayer->land / 3)))
-        Sack(aTargetPlayer);
+    if (!aBattle->targetOverrun && (landCaptured > (targetLand / 3)))
+        Sack(targetPlayer);
 
+    /* Wait for player. */
     printw("<ENTER>? ");
     getnstr(input, sizeof(input));
 
-    /* Update soldiers, land, etc. */
-    aPlayer->soldierCount += soldierCount;
-    if (targetSerfs)
-        aTargetPlayer->serfCount = targetSoldierCount;
-    else
-        aTargetPlayer->soldierCount = targetSoldierCount;
-    aPlayer->land += landCaptured;
-    aTargetPlayer->land -= landCaptured;
-    if (targetOverrun)
-    {
-        aPlayer->serfCount += aTargetPlayer->serfCount;
-        aTargetPlayer->dead = TRUE;
-    }
+    /* Update battle information. */
+    aBattle->landCaptured = landCaptured;
 }
 
 

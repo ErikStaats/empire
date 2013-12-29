@@ -142,6 +142,44 @@ typedef struct
 } Player;
 
 
+/*
+ * This structure contains fields used to managed a battle.
+ *
+ *   player                 Player initiating the battle.
+ *   soldiersToAttackCount  Number of player soldiers to attack.
+ *   soldierCount           Remaining number of player soldiers.
+ *   soldierEfficiency      Efficiency of player soldiers.
+ *   soldierLabel           Label to use to show remaining player soldiers.
+ *   targetPlayer           Target players being attacked.
+ *   targetSoldierCount     Number of target soldiers being attacked.
+ *   targetSoldierEfficiency
+ *                          Efficiency of target soldiers.
+ *   targetSoldierLabel     Label to use to show remaining target soldiers.
+ *   targetLand             Acres of land of target.
+ *   targetSerfs            If true, target is defending with serfs.
+ *   targetDefeated         If true, target has been defeated.
+ *   targetOverrun          If true, target has been overrun.
+ */
+
+typedef struct
+{
+    Player                 *player;
+    int                     soldiersToAttackCount;
+    int                     soldierCount;
+    int                     soldierEfficiency;
+    char                    soldierLabel[80];
+    Player                 *targetPlayer;
+    int                     targetSoldierCount;
+    int                     targetSoldierEfficiency;
+    char                    targetSoldierLabel[80];
+    int                     targetLand;
+    bool                    targetSerfs;
+    int                     landCaptured;
+    bool                    targetDefeated;
+    bool                    targetOverrun;
+} Battle;
+
+
 /*------------------------------------------------------------------------------
  *
  * Globals.
