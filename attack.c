@@ -57,9 +57,14 @@ void AttackScreen(Player *aPlayer)
     Player *targetPlayer;
     char    input[80];
     int     country;
+    int     maxAttacks;
     bool    done;
 
+    /* Determine the maximum number of attacks per year. */
+    maxAttacks = (aPlayer->nobleCount / 4) + 1;
+
     /* Attack other countries. */
+    aPlayer->attackCount = 0;
     done = FALSE;
     while (!done)
     {
@@ -96,7 +101,20 @@ void AttackScreen(Player *aPlayer)
                 continue;
             }
         }
-        Attack(aPlayer, targetPlayer);
+
+        /* Attack. */
+        if (aPlayer->attackCount < maxAttacks)
+        {
+            Attack(aPlayer, targetPlayer);
+        }
+        else
+        {
+            move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+            printw("DUE TO A SHORTAGE OF NOBLES , YOU ARE LIMITED TO ONLY\n");
+            printw(" %d ATTACKS PER YEAR", maxAttacks);
+            refresh();
+            sleep(DELAY_TIME);
+        }
     }
 }
 
@@ -193,6 +211,7 @@ static void Attack(Player *aPlayer, Player *aTargetPlayer)
     DisplayBattleResults(&battle);
 
     /* Update soldiers, land, etc. */
+    aPlayer->attackCount++;
     aPlayer->soldierCount -=   battle.soldiersToAttackCount
                              - battle.soldierCount;
     if (aTargetPlayer != NULL)

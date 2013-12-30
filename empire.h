@@ -95,6 +95,7 @@ typedef struct
  *   armyGrainNeed          How much grain army needs for year.
  *   armyGrainFeed          How much grain to feed army for year.
  *   diedStarvation         How many people died of starvation.
+ *   attackCount            Count of the number of attacks this year.
  */
 
 typedef struct
@@ -139,6 +140,7 @@ typedef struct
     int                     armyGrainNeed;
     int                     armyGrainFeed;
     int                     diedStarvation;
+    int                     attackCount;
 } Player;
 
 
