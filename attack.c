@@ -28,9 +28,7 @@
  * Attack prototypes.
  */
 
-static void AttackBarbarians(Player *aPlayer);
-
-static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer);
+static void Attack(Player *aPlayer, Player *aTargetPlayer);
 
 static void GetSoldiersToAttack(Battle *aBattle);
 
@@ -81,7 +79,7 @@ void AttackScreen(Player *aPlayer)
         }
         else if (country == 1)
         {
-            AttackBarbarians(aPlayer);
+            targetPlayer = NULL;
         }
         else if ((country >= 2) && (country <= (COUNTRY_COUNT + 1)))
         {
@@ -95,12 +93,10 @@ void AttackScreen(Player *aPlayer)
                          country);
                 refresh();
                 sleep(DELAY_TIME);
-            }
-            else
-            {
-                AttackPlayer(aPlayer, &(playerList[country - 2]));
+                continue;
             }
         }
+        Attack(aPlayer, targetPlayer);
     }
 }
 
@@ -111,34 +107,33 @@ void AttackScreen(Player *aPlayer)
  */
 
 /*
- * Attack barbarians for the player specified by aPlayer.
- *
- *   aPlayer                Player.
- */
-
-static void AttackBarbarians(Player *aPlayer)
-{
-}
-
-
-/*
  *   Attack the player specified by aTargetPlayer for the player specified by
- * aPlayer.
+ * aPlayer.  If aTargetPlayer is NULL, attack barbarians.
  *
  *   aPlayer                Player.
  *   aTargetPlayer          Player to attack.
  */
 
-static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
+static void Attack(Player *aPlayer, Player *aTargetPlayer)
 {
     Battle battle;
 
     /* Can't attack other players until the third year. */
-    if (year < 3)
+    if ((aTargetPlayer != NULL) && (year < 3))
     {
         move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
         printw("DUE TO INTERNATIONAL TREATY, YOU CANNOT ATTACK OTHER\n"
                "NATIONS UNTIL THE THIRD YEAR.");
+        refresh();
+        sleep(DELAY_TIME);
+        return;
+    }
+
+    /* If attacking the barbarians, make sure they have land. */
+    if ((aTargetPlayer == NULL) && (barbarianLand == 0))
+    {
+        move(14, 0); clrtoeol(); move(15, 0); clrtoeol(); move(14, 0);
+        printw("ALL BARBARIAN LANDS HAVE BEEN SEIZED\n");
         refresh();
         sleep(DELAY_TIME);
         return;
@@ -159,24 +154,38 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     GetSoldiersToAttack(&battle);
 
     /* Set the target battle information. */
-    battle.targetPlayer = aTargetPlayer;
-    battle.targetLand = aTargetPlayer->land;
-    snprintf(battle.targetSoldierLabel,
-             sizeof(battle.targetSoldierLabel),
-             "%s %s OF %s",
-             aTargetPlayer->title,
-             aTargetPlayer->name,
-             aTargetPlayer->country->name);
-    if (aTargetPlayer->soldierCount > 0)
+    if (aTargetPlayer != NULL)
     {
-        battle.targetSoldierCount = aTargetPlayer->soldierCount;
-        battle.targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
+        battle.targetPlayer = aTargetPlayer;
+        battle.targetLand = aTargetPlayer->land;
+        snprintf(battle.targetSoldierLabel,
+                 sizeof(battle.targetSoldierLabel),
+                 "%s %s OF %s",
+                 aTargetPlayer->title,
+                 aTargetPlayer->name,
+                 aTargetPlayer->country->name);
+        if (aTargetPlayer->soldierCount > 0)
+        {
+            battle.targetSoldierCount = aTargetPlayer->soldierCount;
+            battle.targetSoldierEfficiency = aTargetPlayer->armyEfficiency;
+        }
+        else
+        {
+            battle.targetSerfs = TRUE;
+            battle.targetSoldierCount = aTargetPlayer->serfCount;
+            battle.targetSoldierEfficiency = SERF_EFFICIENCY;
+        }
     }
     else
     {
-        battle.targetSerfs = TRUE;
-        battle.targetSoldierCount = aTargetPlayer->serfCount;
-        battle.targetSoldierEfficiency = SERF_EFFICIENCY;
+        battle.targetLand = barbarianLand;
+        snprintf(battle.targetSoldierLabel,
+                 sizeof(battle.targetSoldierLabel),
+                 "PAGAN BARBARIANS");
+        battle.targetSoldierCount =
+              RandRange(3 * RandRange(battle.soldierCount))
+            + RandRange(RandRange(3 * battle.soldierCount / 2));
+        battle.targetSoldierEfficiency = 9;
     }
 
     /* Battle. */
@@ -186,13 +195,19 @@ static void AttackPlayer(Player *aPlayer, Player *aTargetPlayer)
     /* Update soldiers, land, etc. */
     aPlayer->soldierCount -=   battle.soldiersToAttackCount
                              - battle.soldierCount;
-    if (battle.targetSerfs)
-        aTargetPlayer->serfCount = battle.targetSoldierCount;
-    else
-        aTargetPlayer->soldierCount = battle.targetSoldierCount;
+    if (aTargetPlayer != NULL)
+    {
+        if (battle.targetSerfs)
+            aTargetPlayer->serfCount = battle.targetSoldierCount;
+        else
+            aTargetPlayer->soldierCount = battle.targetSoldierCount;
+    }
     aPlayer->land += battle.landCaptured;
-    aTargetPlayer->land -= battle.landCaptured;
-    if (battle.targetOverrun)
+    if (aTargetPlayer != NULL)
+        aTargetPlayer->land -= battle.landCaptured;
+    else
+        barbarianLand -= battle.landCaptured;
+    if ((aTargetPlayer != NULL) && battle.targetOverrun)
     {
         aPlayer->serfCount += aTargetPlayer->serfCount;
         aTargetPlayer->dead = TRUE;
@@ -359,7 +374,6 @@ static void DisplayBattleResults(Battle *aBattle)
     int     targetLand;
     int     landCaptured;
     bool    targetSerfs;
-    bool    targetOverrun = FALSE;
 
     /* Get battle information. */
     player = aBattle->player;
@@ -372,10 +386,9 @@ static void DisplayBattleResults(Battle *aBattle)
     /* Display battle results. */
     clear();
     mvprintw(1, 23, "BATTLE OVER\n\n");
-    if (aBattle->targetOverrun)
+    if ((targetPlayer != NULL) && aBattle->targetOverrun)
     {
         /* Target player overrun. */
-        targetOverrun = TRUE;
         printw("THE COUNTRY OF %s WAS OVERUN!\n", targetPlayer->country->name);
         printw("ALL ENEMY NOBLES WERE SUMMARILY EXECUTED!\n\n\n");
         printw("THE REMAINING ENEMY SOLDIERS "
@@ -389,6 +402,11 @@ static void DisplayBattleResults(Battle *aBattle)
         printw("BY YOUR REVENGEFUL ARMY IN A "
                "DRUNKEN RIOT FOLLOWING THE VICTORY\n");
         printw("CELEBRATION.\n");
+    }
+    else if ((targetPlayer == NULL) && aBattle->targetOverrun)
+    {
+        printw("ALL BARBARIAN LANDS HAVE BEEN SEIZED\n");
+        printw("THE REMAINING BARBARIANS FLED\n");
     }
     else if (aBattle->targetDefeated)
     {
@@ -417,8 +435,12 @@ static void DisplayBattleResults(Battle *aBattle)
     }
 
     /* Check for sacking. */
-    if (!aBattle->targetOverrun && (landCaptured > (targetLand / 3)))
+    if (   (targetPlayer != NULL)
+        && !aBattle->targetOverrun
+        && (landCaptured > (targetLand / 3)))
+    {
         Sack(targetPlayer);
+    }
 
     /* Wait for player. */
     printw("<ENTER>? ");
