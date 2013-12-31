@@ -60,6 +60,7 @@ typedef struct
  *   country                Player country.
  *   level                  Player level.
  *   title                  Player title.
+ *   human                  If true, player is human.
  *   dead                   If true, player is dead.
  *   land                   Land in acres.
  *   grain                  Grain reserves in bushels.
@@ -105,6 +106,7 @@ typedef struct
     Country                *country;
     int                     level;
     char                    title[80];
+    bool                    human;
     bool                    dead;
     int                     land;
     int                     grain;

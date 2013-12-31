@@ -58,15 +58,13 @@ void AttackScreen(Player *aPlayer)
     char    input[80];
     int     country;
     int     maxAttacks;
-    bool    done;
 
     /* Determine the maximum number of attacks per year. */
     maxAttacks = (aPlayer->nobleCount / 4) + 1;
 
     /* Attack other countries. */
     aPlayer->attackCount = 0;
-    done = FALSE;
-    while (!done)
+    while (1)
     {
         /* Draw the attack screen. */
         DrawAttackScreen(aPlayer);
@@ -80,7 +78,7 @@ void AttackScreen(Player *aPlayer)
         /* Parse input. */
         if (country == 0)
         {
-            done = TRUE;
+            break;
         }
         else if (country == 1)
         {

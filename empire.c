@@ -34,6 +34,10 @@ static void GameSetupScreen(void);
 
 static void NewYearScreen(void);
 
+static void PlayHuman(Player *aPlayer);
+
+static void PlayCPU(Player *aPlayer);
+
 
 /*------------------------------------------------------------------------------
  *
@@ -162,8 +166,8 @@ int main(argc, argv)
         /* Start a new year. */
         NewYearScreen();
 
-        /* Go through each human player. */
-        for (i = 0; i < playerCount; i++)
+        /* Go through each player. */
+        for (i = 0; i < COUNTRY_COUNT; i++)
         {
             /* Get player. */
             player = &(playerList[i]);
@@ -172,29 +176,11 @@ int main(argc, argv)
             if (player->dead)
                 continue;
 
-            /* Show grain screen. */
-            GrainScreen(player);
-
-            /* Show population screen. */
-            PopulationScreen(player);
-
-            /* If all human players have died, end game. */
-            for (j = 0; j < playerCount; j++)
-            {
-                if (!playerList[j].dead)
-                    break;
-            }
-            if (j == playerCount)
-            {
-                gameOver = TRUE;
-                break;
-            }
-
-            /* Show investments screen. */
-            InvestmentsScreen(player);
-
-            /* Show attack screen. */
-            AttackScreen(player);
+            /* Play as human or CPU. */
+            if (player->human)
+                PlayHuman(player);
+            else
+                PlayCPU(player);
         }
     }
 
@@ -280,6 +266,9 @@ static void GameSetupScreen(void)
         country = &(countryList[i]);
         player = &(playerList[i]);
 
+        /* Player is human. */
+        player->human = TRUE;
+
         /* Get the country's ruler's name. */
         printw("WHO IS THE RULER OF %s? ", country->name);
         getnstr(player->name, sizeof(player->name));
@@ -293,6 +282,9 @@ static void GameSetupScreen(void)
         /* Get the country and player records. */
         country = &(countryList[i]);
         player = &(playerList[i]);
+
+        /* Player is not human. */
+        player->human = FALSE;
 
         /* Get the country's ruler's name. */
         snprintf(player->name, sizeof(player->name), "%s", country->rulerName);
@@ -368,6 +360,61 @@ static void NewYearScreen(void)
     refresh();
 
     /* Delay. */
+    sleep(DELAY_TIME);
+}
+
+
+/*
+ * Play the human player specified by aPlayer.
+ *
+ *   aPlayer                Human player.
+ */
+
+static void PlayHuman(Player *aPlayer)
+{
+    int i;
+
+    /* Show grain screen. */
+    GrainScreen(aPlayer);
+
+    /* Show population screen. */
+    PopulationScreen(aPlayer);
+
+    /* If all human players have died, end game. */
+    for (i = 0; i < playerCount; i++)
+    {
+        if (!playerList[i].dead)
+            break;
+    }
+    if (i == playerCount)
+    {
+        gameOver = TRUE;
+        return;
+    }
+
+    /* Show investments screen. */
+    InvestmentsScreen(aPlayer);
+
+    /* Show attack screen. */
+    AttackScreen(aPlayer);
+}
+
+
+/*
+ * Play the CPU player specified by aPlayer.
+ *
+ *   aPlayer                CPU player.
+ */
+
+static void PlayCPU(Player *aPlayer)
+{
+    /* Reset screen. */
+    clear();
+    move(0, 0);
+
+    /* Announce player's turn. */
+    printw("ONE MOMENT -- %s %s'S TURN . . .", aPlayer->title, aPlayer->name);
+    refresh();
     sleep(DELAY_TIME);
 }
 
