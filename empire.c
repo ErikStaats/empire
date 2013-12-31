@@ -34,6 +34,8 @@ static void GameSetupScreen(void);
 
 static void NewYearScreen(void);
 
+static void SummaryScreen(void);
+
 static void PlayHuman(Player *aPlayer);
 
 static void PlayCPU(Player *aPlayer);
@@ -181,7 +183,18 @@ int main(argc, argv)
                 PlayHuman(player);
             else
                 PlayCPU(player);
+
+            /* Stop if game over. */
+            if (gameOver)
+                break;
         }
+
+        /* Stop if game over. */
+        if (gameOver)
+            break;
+
+        /* Display summary. */
+        SummaryScreen();
     }
 
     /* End nCurses. */
@@ -257,7 +270,7 @@ static void GameSetupScreen(void)
         refresh();
         getnstr(input, sizeof(input));
         playerCount = strtol(input, NULL, 0);
-    } while (playerCount > 6);
+    } while (playerCount > COUNTRY_COUNT);
 
     /* Get the player names. */
     for (i = 0; i < playerCount; i++)
@@ -361,6 +374,51 @@ static void NewYearScreen(void)
 
     /* Delay. */
     sleep(DELAY_TIME);
+}
+
+
+/*
+ * Display a summary of all players.
+ */
+
+static void SummaryScreen(void)
+{
+    char     input[80];
+    Player  *player;
+    Country *country;
+    int      i;
+
+    /* Reset screen. */
+    clear();
+    move(0, 0);
+
+    /* Display summary. */
+    printw("SUMMARY\n");
+    printw("NOBLES   SOLDIERS   MERCHANTS   SERFS   LAND    PALACE\n\n");
+    for (i = 0; i < COUNTRY_COUNT; i++)
+    {
+        /* Get the country and player records. */
+        country = &(countryList[i]);
+        player = &(playerList[i]);
+
+        /* Skip dead players. */
+        if (player->dead)
+            continue;
+
+        /* Display player summary. */
+        printw("%s %s OF %s\n", player->title, player->name, country->name);
+        printw(" %3d       %5d       %5d    %6d   %5d  %3d%%\n",
+               player->nobleCount,
+               player->soldierCount,
+               player->merchantCount,
+               player->serfCount,
+               player->land,
+               player->palaceCount);
+    }
+
+    /* Wait for player. */
+    printw("<ENTER>? ");
+    getnstr(input, sizeof(input));
 }
 
 
