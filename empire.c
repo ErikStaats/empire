@@ -40,6 +40,8 @@ static void PlayHuman(Player *aPlayer);
 
 static void PlayCPU(Player *aPlayer);
 
+static void UpdateCPUPlayerHoldings(Player *aPlayer);
+
 
 /*------------------------------------------------------------------------------
  *
@@ -413,7 +415,7 @@ static void SummaryScreen(void)
                player->merchantCount,
                player->serfCount,
                player->land,
-               player->palaceCount);
+               10 * player->palaceCount);
     }
 
     /* Wait for player. */
@@ -474,5 +476,154 @@ static void PlayCPU(Player *aPlayer)
     printw("ONE MOMENT -- %s %s'S TURN . . .", aPlayer->title, aPlayer->name);
     refresh();
     sleep(DELAY_TIME);
+
+    /* Update CPU player holdings. */
+    UpdateCPUPlayerHoldings(aPlayer);
+}
+
+
+/*
+ * Update the holdings of the CPU player specified by aPlayer.
+ *
+ *   aPlayer                CPU player.
+ */
+
+static void UpdateCPUPlayerHoldings(Player *aPlayer)
+{
+    Player *humanPlayer;
+    int     cpuSerfCount = 0;
+    int     cpuGrainForSale = 0;
+    float   cpuGrainPrice = 0.0;
+    int     cpuTreasury = 0;
+    int     cpuMerchantCount = 0;
+    int     cpuMarketplaceCount = 0;
+    int     cpuGrainMillCount = 0;
+    int     cpuFoundryCount = 0;
+    int     cpuShipyardCount = 0;
+    int     cpuPalaceCount = 0;
+    int     cpuNobleCount = 0;
+    int     cpuArmyEfficiency = 0;
+    int     livingHumanPlayerCount = 0;
+    int     i;
+
+    /*
+     * Determine the average human player holdings.  If there are no human
+     * players, treat the first living player as a human player.
+     */
+    for (i = 0; (i < playerCount) || (livingHumanPlayerCount == 0); i++)
+    {
+        /* Get the player record. */
+        humanPlayer = &(playerList[i]);
+
+        /* Skip dead players. */
+        if (humanPlayer->dead)
+            continue;
+
+        /* Increment total human player holdings. */
+        livingHumanPlayerCount++;
+        cpuSerfCount += humanPlayer->serfCount;
+        cpuGrainForSale += humanPlayer->grainForSale;
+        cpuGrainPrice += humanPlayer->grainPrice;
+        cpuTreasury += humanPlayer->treasury;
+        cpuMerchantCount += humanPlayer->merchantCount;
+        cpuMarketplaceCount += humanPlayer->marketplaceCount;
+        cpuGrainMillCount += humanPlayer->grainMillCount;
+        cpuFoundryCount += humanPlayer->foundryCount;
+        cpuShipyardCount += humanPlayer->shipyardCount;
+        cpuPalaceCount += humanPlayer->palaceCount;
+        cpuNobleCount += humanPlayer->nobleCount;
+        cpuArmyEfficiency += humanPlayer->armyEfficiency;
+    }
+    cpuSerfCount /= livingHumanPlayerCount;
+    cpuGrainForSale /= livingHumanPlayerCount;
+    cpuGrainPrice /= livingHumanPlayerCount;
+    cpuTreasury /= livingHumanPlayerCount;
+    cpuMerchantCount /= livingHumanPlayerCount;
+    cpuMarketplaceCount /= livingHumanPlayerCount;
+    cpuGrainMillCount /= livingHumanPlayerCount;
+    cpuFoundryCount /= livingHumanPlayerCount;
+    cpuShipyardCount /= livingHumanPlayerCount;
+    cpuPalaceCount /= livingHumanPlayerCount;
+    cpuNobleCount /= livingHumanPlayerCount;
+    cpuArmyEfficiency /= livingHumanPlayerCount;
+
+    /* Update serf count. */
+    cpuSerfCount += RandRange(200) - RandRange(200);
+    aPlayer->serfCount = cpuSerfCount;
+
+    /* Update grain for sale.  Charge more in bad weather. */
+    cpuGrainForSale += RandRange(1000) - RandRange(1000);
+    while (1)
+    {
+        cpuGrainPrice += RandRange(100)/100.0 - RandRange(100)/100.0;
+        if (cpuGrainPrice < 0.0)
+            cpuGrainPrice = 0.0;
+        else
+            break;
+    }
+    if ((cpuGrainForSale > aPlayer->grainForSale) && (RandRange(9) > 6))
+    {
+        aPlayer->grainForSale = cpuGrainForSale;
+        aPlayer->grainPrice = cpuGrainPrice;
+        if (weather < 3)
+            aPlayer->grainPrice += RandRange(100) / 150.0;
+    }
+
+    /* Update treasury. */
+    cpuTreasury += RandRange(1500) - RandRange(1500);
+    aPlayer->treasury = cpuTreasury;
+
+    /* Update merchant count. */
+    cpuMerchantCount += RandRange(25) - RandRange(25);
+    aPlayer->merchantCount = MAX(aPlayer->merchantCount, cpuMerchantCount);
+
+    /* Update marketplace count. */
+    cpuMarketplaceCount += RandRange(4) - RandRange(4);
+    aPlayer->marketplaceCount = MAX(aPlayer->marketplaceCount,
+                                    cpuMarketplaceCount);
+
+    /* Update grain mill count. */
+    cpuGrainMillCount += RandRange(2) - RandRange(2);
+    aPlayer->grainMillCount = MAX(aPlayer->grainMillCount, cpuGrainMillCount);
+
+    /* Update foundry count. */
+    if (RandRange(100) > 30)
+        cpuFoundryCount += RandRange(2) - RandRange(2);
+    aPlayer->foundryCount = MAX(aPlayer->foundryCount, cpuFoundryCount);
+
+    /* Update shipyard count. */
+    if (RandRange(100) > 30)
+        cpuShipyardCount += RandRange(2) - RandRange(2);
+    aPlayer->shipyardCount = MAX(aPlayer->shipyardCount, cpuShipyardCount);
+
+    /* Update palace count. */
+    if ((RandRange(100) > 30) && (RandRange(100) > 50))
+        cpuPalaceCount += RandRange(2) - RandRange(2);
+    aPlayer->palaceCount = MAX(aPlayer->palaceCount, cpuPalaceCount);
+
+    /* Update noble count. */
+    if ((RandRange(100) > 30) && (RandRange(100) > 50))
+        cpuNobleCount += RandRange(2) - RandRange(2);
+    aPlayer->nobleCount = MAX(aPlayer->nobleCount, cpuNobleCount);
+
+    /* Update army efficiency. */
+    aPlayer->armyEfficiency = cpuArmyEfficiency;
+
+    /* Update soldier count. */
+    aPlayer->soldierCount =   (10 * aPlayer->nobleCount)
+                            + RandRange(10 * aPlayer->nobleCount);
+    if (aPlayer->serfCount > 0)
+    {
+        while ((  ((float) aPlayer->soldierCount)
+                / ((float) aPlayer->serfCount)) >
+               ((0.01 * ((float) aPlayer->foundryCount)) + 0.05))
+        {
+            aPlayer->soldierCount /= 2;
+        }
+    }
+    else
+    {
+        aPlayer->soldierCount = 0;
+    }
 }
 

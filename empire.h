@@ -233,6 +233,15 @@ void AttackScreen(Player *aPlayer);
  */
 
 /*
+ * Return the maximum of the two values specified by a and b.
+ *
+ *   a, b                   Values for which to return the maximum.
+ */
+
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+
+/*
  * Return the length of the array specified by aArray.
  *
  *   aArray                 Array to get length.
